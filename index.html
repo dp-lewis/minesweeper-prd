@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minesweeper PRD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+:root{
+  --ground:#EEF0F3;
+  --surface:#FFFFFF;
+  --panel:#E3E6EB;
+  --ink:#14171C;
+  --ink-2:#565C67;
+  --ink-3:#7C838F;
+  --rule:#D3D7DE;
+  --rule-2:#BFC5CE;
+  --accent:#1A46C8;
+  --accent-soft:#E4E9FA;
+  --alert:#B3261E;
+  --alert-soft:#FBE9E7;
+  --n1:#1A46C8; --n2:#1E7A38; --n3:#C22A21; --n4:#122B70;
+  --n5:#7A1F16; --n6:#137A78; --n7:#14171C; --n8:#6B727E;
+  --shadow:0 1px 0 rgba(20,23,28,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1216;
+    --surface:#171B21;
+    --panel:#1F242C;
+    --ink:#E6E9EE;
+    --ink-2:#A0A8B4;
+    --ink-3:#7B8390;
+    --rule:#2A3038;
+    --rule-2:#3A424D;
+    --accent:#7FA0FF;
+    --accent-soft:#1B2540;
+    --alert:#FF8A7A;
+    --alert-soft:#33201D;
+    --n1:#7FA0FF; --n2:#5FC97E; --n3:#FF7A6B; --n4:#9FB4FF;
+    --n5:#E39B8F; --n6:#4FD1CE; --n7:#E6E9EE; --n8:#9AA2AE;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1216;
+  --surface:#171B21;
+  --panel:#1F242C;
+  --ink:#E6E9EE;
+  --ink-2:#A0A8B4;
+  --ink-3:#7B8390;
+  --rule:#2A3038;
+  --rule-2:#3A424D;
+  --accent:#7FA0FF;
+  --accent-soft:#1B2540;
+  --alert:#FF8A7A;
+  --alert-soft:#33201D;
+  --n1:#7FA0FF; --n2:#5FC97E; --n3:#FF7A6B; --n4:#9FB4FF;
+  --n5:#E39B8F; --n6:#4FD1CE; --n7:#E6E9EE; --n8:#9AA2AE;
+  --shadow:none;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Source Serif 4","Iowan Old Style",Georgia,serif;
+  font-size:17.5px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:920px;margin:0 auto;padding:0 24px 120px}
+
+/* ---------- masthead ---------- */
+.mast{
+  border-bottom:1px solid var(--rule);
+  margin-bottom:44px;
+  padding:56px 0 30px;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 18px;
+}
+h1{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-weight:700;font-size:clamp(2.1rem,5.5vw,3.05rem);
+  line-height:1.06;letter-spacing:-.022em;margin:0 0 14px;text-wrap:balance;
+}
+.dek{
+  font-size:1.16rem;color:var(--ink-2);margin:0 0 28px;max-width:60ch;
+}
+.meta{
+  display:flex;flex-wrap:wrap;gap:8px 10px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;
+}
+.meta span{
+  border:1px solid var(--rule-2);padding:4px 9px;color:var(--ink-2);
+  letter-spacing:.04em;
+}
+
+/* ---------- headings ---------- */
+h2{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-weight:600;font-size:1.62rem;letter-spacing:-.015em;
+  margin:64px 0 6px;padding-top:22px;border-top:2px solid var(--ink);
+  text-wrap:balance;
+}
+h2 .num{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.72em;color:var(--ink-3);margin-right:.7em;font-weight:500;
+}
+h3{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-weight:600;font-size:1.1rem;letter-spacing:-.005em;
+  margin:38px 0 4px;text-wrap:balance;
+}
+h3 .num{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.8em;color:var(--ink-3);margin-right:.6em;font-weight:500;
+}
+p{margin:0 0 1.05em;max-width:68ch}
+strong{font-weight:600}
+em{font-style:italic}
+a{color:var(--accent)}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.855em;background:var(--panel);padding:.1em .34em;
+  border-radius:2px;
+}
+
+/* ---------- lede / contents ---------- */
+.lede{
+  background:var(--surface);border:1px solid var(--rule);
+  padding:24px 26px;margin:0 0 8px;box-shadow:var(--shadow);
+}
+.lede p:last-child{margin-bottom:0}
+.toc{
+  columns:2;column-gap:36px;
+  font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:.9rem;
+  margin:34px 0 0;padding:0;list-style:none;
+}
+.toc li{break-inside:avoid;margin:0 0 7px}
+.toc a{text-decoration:none;color:var(--ink-2);display:flex;gap:.7em}
+.toc a:hover{color:var(--accent)}
+.toc .n{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  color:var(--ink-3);font-size:.85em;min-width:1.6em;
+}
+@media (max-width:640px){.toc{columns:1}}
+
+/* ---------- requirements ---------- */
+.req{
+  display:grid;grid-template-columns:6.2rem 1fr;gap:0 1.3rem;
+  margin:0 0 18px;padding:2px 0;
+}
+.req .rid{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.78rem;font-weight:600;letter-spacing:.03em;
+  color:var(--accent);padding-top:.42em;
+}
+.req .body p:last-child{margin-bottom:0}
+.req.key{
+  background:var(--alert-soft);
+  border-top:1px solid var(--alert);border-bottom:1px solid var(--alert);
+  padding:16px 18px;margin:22px 0;grid-template-columns:6.2rem 1fr;
+}
+.req.key .rid{color:var(--alert)}
+@media (max-width:820px){
+  .req,.req.key{grid-template-columns:1fr;gap:.3rem}
+  .req .rid{padding-top:0}
+}
+.tag{
+  display:inline-block;font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;
+  color:var(--alert);border:1px solid var(--alert);padding:2px 6px;
+  vertical-align:.12em;margin:0 .25em;white-space:nowrap;
+}
+
+/* ---------- figures ---------- */
+figure{margin:22px 0;}
+pre{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:13px;line-height:1.65;
+  background:var(--panel);border:1px solid var(--rule);
+  padding:18px 20px;margin:0;overflow-x:auto;
+  color:var(--ink);
+}
+figcaption{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:.815rem;color:var(--ink-3);margin-top:9px;max-width:68ch;
+}
+.mine{color:var(--n3);font-weight:600}
+.zero{color:var(--ink-3)}
+.one{color:var(--n1);font-weight:600}
+.two{color:var(--n2);font-weight:600}
+.three{color:var(--n3);font-weight:600}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:22px 0}
+table{
+  border-collapse:collapse;width:100%;min-width:420px;
+  font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:.9rem;
+  font-variant-numeric:tabular-nums;
+}
+th,td{
+  text-align:left;padding:9px 14px 9px 0;
+  border-bottom:1px solid var(--rule);vertical-align:top;
+}
+th{
+  font-size:.735rem;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--rule-2);
+  white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:none}
+td code{font-size:.86em}
+.ac td:first-child{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.78rem;color:var(--accent);font-weight:600;white-space:nowrap;
+}
+.ac td:last-child{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.75rem;color:var(--ink-3);white-space:nowrap;
+}
+.nums td{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:600;
+  text-align:center;padding:12px 6px;font-size:1.05rem}
+.nums th{text-align:center;padding-right:0}
+
+/* ---------- lists ---------- */
+ul.plain{margin:0 0 1.05em;padding-left:1.15em;max-width:68ch}
+ul.plain li{margin-bottom:.5em}
+ul.plain li::marker{color:var(--ink-3)}
+
+/* ---------- ascii state machine ---------- */
+.diagram{background:var(--surface)}
+
+/* ---------- appendix ---------- */
+.principles{list-style:none;counter-reset:p;margin:26px 0 0;padding:0}
+.principles li{
+  counter-increment:p;position:relative;
+  padding:0 0 0 3.4rem;margin:0 0 26px;max-width:70ch;
+}
+.principles li::before{
+  content:counter(p,decimal-leading-zero);
+  position:absolute;left:0;top:.12em;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.86rem;font-weight:600;color:var(--accent);
+}
+.principles b{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-weight:600;display:block;margin-bottom:.15em;font-size:1.02rem;
+}
+
+.foot{
+  margin-top:80px;padding-top:22px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;color:var(--ink-3);letter-spacing:.04em;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">Product Requirements Document · v1.0</p>
+  <h1>Minesweeper, specified from zero</h1>
+  <p class="dek">A complete build specification for a grid deduction game, written for an engineer who has never seen or played one. Every assumed rule is written down and marked.</p>
+  <div class="meta">
+    <span>STATUS: READY FOR IMPLEMENTATION</span>
+    <span>22 FUNCTIONAL REQS</span>
+    <span>18 ACCEPTANCE CRITERIA</span>
+    <span>9 MARKED ASSUMPTIONS</span>
+  </div>
+</header>
+
+<section class="lede">
+  <p>This PRD is written under one deliberate constraint: <strong>the reader is assumed to have zero prior knowledge of the product.</strong> No rule is left to “everyone knows that.” Where a rule is commonly assumed but rarely written down, it carries a <span class="tag">Commonly omitted</span> mark — those are the requirements that separate a working build from a broken one.</p>
+  <p>Requirements are numbered (<code>FR-n</code>, <code>UX-n</code>, <code>NFR-n</code>) so they can be cited in tickets, tests and review comments. Every functional requirement is written to be independently verifiable, and §10 turns each one into a test.</p>
+</section>
+
+<ol class="toc">
+  <li><a href="#s1"><span class="n">01</span> Context and intent</a></li>
+  <li><a href="#s2"><span class="n">02</span> Domain model</a></li>
+  <li><a href="#s3"><span class="n">03</span> Board generation</a></li>
+  <li><a href="#s4"><span class="n">04</span> Core interaction</a></li>
+  <li><a href="#s5"><span class="n">05</span> Game state</a></li>
+  <li><a href="#s6"><span class="n">06</span> Interface</a></li>
+  <li><a href="#s7"><span class="n">07</span> Non-functional</a></li>
+  <li><a href="#s8"><span class="n">08</span> Non-goals</a></li>
+  <li><a href="#s9"><span class="n">09</span> Open questions</a></li>
+  <li><a href="#s10"><span class="n">10</span> Acceptance criteria</a></li>
+  <li><a href="#sa"><span class="n">A</span> Reusing this as a template</a></li>
+</ol>
+
+<!-- ============ 1 ============ -->
+<h2 id="s1"><span class="num">01</span>Context and intent</h2>
+
+<h3><span class="num">1.1</span>What we are building</h3>
+<p>A single-player logic puzzle played on a rectangular grid. A fixed number of hidden <em>mines</em> are distributed randomly across the grid. The player’s job is to identify every cell that does <em>not</em> contain a mine, using numeric clues revealed as they play. The game ends in a win when all safe cells have been identified, or a loss the moment a mine is disturbed.</p>
+<p>The core loop is <strong>deduction, not reflex</strong>. The player is never asked to react quickly, aim precisely, or guess blindly under normal play. Every well-formed board position should be solvable by reasoning, and the game’s job is to present the information needed for that reasoning as clearly as possible.</p>
+
+<h3><span class="num">1.2</span>Why this product</h3>
+<p>Short-session puzzle games have durable appeal: a round lasts between ten seconds and ten minutes, requires no narrative context, no tutorial beyond a few sentences, and no persistent account. The design succeeds because the rules are trivially small but the state space is large — difficulty comes from the player’s reasoning rather than from mechanical complexity.</p>
+
+<h3><span class="num">1.3</span>Target player</h3>
+<div class="tw"><table>
+<tbody>
+<tr><th>Primary</th><td>An adult on a desktop or laptop with keyboard and mouse, looking for a 1–10 minute break. Comfortable with basic computer use. No gaming experience assumed.</td></tr>
+<tr><th>Secondary</th><td>A returning player optimising for completion time on the hardest preset. Cares about the timer, precise input, and the absence of unlucky losses.</td></tr>
+</tbody>
+</table></div>
+
+<h3><span class="num">1.4</span>Success criteria</h3>
+<div class="req"><span class="rid">SC-1</span><div class="body"><p>A first-time player who reads the in-product instructions can complete a Beginner board without external help.</p></div></div>
+<div class="req"><span class="rid">SC-2</span><div class="body"><p>A round never ends because of software behaviour the player could not have anticipated (see FR-12, first-click safety).</p></div></div>
+<div class="req"><span class="rid">SC-3</span><div class="body"><p>All input responds within one animation frame; no interaction feels laggy on the largest supported board.</p></div></div>
+
+<h3><span class="num">1.5</span>Explicitly out of scope for v1</h3>
+<p>Multiplayer, accounts, server-side persistence, monetisation, sound, animation beyond simple state changes, procedurally guaranteed-solvable boards (§9), custom themes, mobile-first touch design (§8).</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="s2"><span class="num">02</span>Domain model</h2>
+<p>Define these terms once; the rest of the document uses them precisely.</p>
+
+<p><strong>Board</strong> — a rectangular grid of cells, <code>width</code> columns by <code>height</code> rows. Cell positions are addressed <code>(row, col)</code>, zero-indexed from the top-left.</p>
+
+<p><strong>Cell</strong> — one square of the grid. Every cell has:</p>
+<div class="tw"><table>
+<thead><tr><th>Attribute</th><th>Type</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>hasMine</code></td><td>boolean</td><td>Whether a mine is hidden here. Never directly visible to the player during play.</td></tr>
+<tr><td><code>adjacentMines</code></td><td>integer 0–8</td><td>How many of this cell’s neighbours contain mines. Derived, not stored independently.</td></tr>
+<tr><td><code>state</code></td><td>enum</td><td>One of <code>COVERED</code>, <code>REVEALED</code>, <code>FLAGGED</code>. See §2.1.</td></tr>
+</tbody>
+</table></div>
+
+<p><strong>Neighbours</strong> — the up-to-eight cells orthogonally <em>and diagonally</em> adjacent to a given cell. <span class="tag">Commonly omitted</span> Diagonals count. A cell in the middle of the board has 8 neighbours; an edge cell has 5; a corner cell has 3. Every rule in this document that says “adjacent” or “neighbouring” uses this eight-way definition.</p>
+
+<figure>
+<pre>Neighbours of X — all eight cells marked ·
+
+    · · ·
+    · X ·
+    · · ·</pre>
+</figure>
+
+<p><strong>Mine</strong> — a hidden hazard. Revealing one ends the game in a loss.</p>
+<p><strong>Flag</strong> — a player-placed marker on a covered cell, meaning “I believe a mine is here.” A flag is a note to the player and a safety interlock; it has no effect on the hidden board.</p>
+<p><strong>Reveal</strong> (also <em>open</em>, <em>uncover</em>) — the act of exposing a cell’s contents.</p>
+
+<h3><span class="num">2.1</span>Cell state machine</h3>
+<figure>
+<pre class="diagram">                  reveal (FR-9)
+   ┌──────────┐ ─────────────────► ┌──────────┐
+   │ COVERED  │                    │ REVEALED │  (terminal)
+   └──────────┘ ◄────┐             └──────────┘
+        │            │
+  flag  │            │ unflag
+(FR-13) │            │ (FR-13)
+        ▼            │
+   ┌──────────┐ ─────┘
+   │ FLAGGED  │
+   └──────────┘</pre>
+</figure>
+
+<div class="req"><span class="rid">FR-1</span><div class="body"><p><code>REVEALED</code> is terminal. A revealed cell can never return to <code>COVERED</code> or <code>FLAGGED</code>.</p></div></div>
+
+<div class="req key"><span class="rid">FR-2</span><div class="body"><p><span class="tag">Commonly omitted</span> A <code>FLAGGED</code> cell cannot be revealed by any player action. This is the entire practical purpose of flagging: it stops the player destroying their own game with a misclick. A build where flags are decorative is a broken build.</p></div></div>
+
+<!-- ============ 3 ============ -->
+<h2 id="s3"><span class="num">03</span>Board generation</h2>
+
+<div class="req"><span class="rid">FR-3</span><div class="body"><p>A new game is defined by three parameters: <code>width</code>, <code>height</code>, <code>mineCount</code>.</p></div></div>
+<div class="req"><span class="rid">FR-4</span><div class="body"><p>Mines are placed uniformly at random, without replacement, across eligible cells. Every eligible cell must have equal probability of receiving a mine. Exactly <code>mineCount</code> mines are placed — no more, no fewer.</p></div></div>
+<div class="req"><span class="rid">FR-5</span><div class="body"><p><code>mineCount</code> must satisfy <code>1 ≤ mineCount ≤ (width × height) − 9</code>. The <code>− 9</code> reserve exists so first-click safety (FR-12) can always be honoured, since that rule may need to keep a full 3×3 block mine-free.</p></div></div>
+
+<h3><span class="num">3.1</span>Difficulty presets</h3>
+<div class="tw"><table>
+<thead><tr><th>Preset</th><th>Width</th><th>Height</th><th>Mines</th><th>Density</th></tr></thead>
+<tbody>
+<tr><td>Beginner</td><td>9</td><td>9</td><td>10</td><td>12.3%</td></tr>
+<tr><td>Intermediate</td><td>16</td><td>16</td><td>40</td><td>15.6%</td></tr>
+<tr><td>Expert</td><td>30</td><td>16</td><td>99</td><td>20.6%</td></tr>
+</tbody>
+</table></div>
+
+<div class="req"><span class="rid">FR-6</span><div class="body"><p>All three presets must be available. Expert is wider than it is tall; this is intentional and must not be “corrected” to a square.</p></div></div>
+<div class="req"><span class="rid">FR-7</span><div class="body"><p>A Custom option accepts player-supplied dimensions and mine count, validated against FR-5 and NFR-2 bounds. Invalid input is rejected with a message naming the violated bound; it must not silently clamp.</p></div></div>
+
+<h3><span class="num">3.2</span>Deriving the clues</h3>
+<div class="req"><span class="rid">FR-8</span><div class="body"><p>For every cell, <code>adjacentMines</code> equals the count of its neighbours (eight-way, §2) that have <code>hasMine == true</code>. Compute this after mine placement. A cell that itself contains a mine still has an <code>adjacentMines</code> value, but it is never displayed — revealing that cell ends the game instead.</p></div></div>
+
+<figure>
+<pre>hidden truth              derived adjacentMines
+
+  <span class="zero">.</span> <span class="mine">*</span> <span class="zero">.</span> <span class="zero">.</span>                   <span class="one">1</span> <span class="mine">*</span> <span class="one">1</span> <span class="zero">0</span>
+  <span class="zero">.</span> <span class="zero">.</span> <span class="zero">.</span> <span class="zero">.</span>                   <span class="two">2</span> <span class="three">3</span> <span class="two">2</span> <span class="one">1</span>
+  <span class="mine">*</span> <span class="zero">.</span> <span class="mine">*</span> <span class="zero">.</span>                   <span class="one">1</span> <span class="mine">*</span> <span class="one">1</span> <span class="one">1</span>
+  <span class="zero">.</span> <span class="zero">.</span> <span class="zero">.</span> <span class="zero">.</span>                   <span class="one">1</span> <span class="two">2</span> <span class="two">2</span> <span class="one">1</span></pre>
+<figcaption>A 4×4 board with mines at (0,1), (2,0) and (2,2). Check (1,1): of its eight neighbours, three hold mines — so <code>adjacentMines = 3</code>.</figcaption>
+</figure>
+
+<!-- ============ 4 ============ -->
+<h2 id="s4"><span class="num">04</span>Core interaction</h2>
+<p>Three player actions exist. Nothing else changes board state.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Default input</th><th>Requirement</th></tr></thead>
+<tbody>
+<tr><td>Reveal</td><td>Left click</td><td><code>FR-9</code></td></tr>
+<tr><td>Toggle flag</td><td>Right click</td><td><code>FR-13</code></td></tr>
+<tr><td>Chord</td><td>Both buttons, or middle click</td><td><code>FR-17</code></td></tr>
+</tbody>
+</table></div>
+
+<h3><span class="num">4.1</span>Revealing</h3>
+<div class="req"><span class="rid">FR-9</span><div class="body"><p>Left-clicking a <code>COVERED</code> cell reveals it. Left-clicking a <code>FLAGGED</code> or <code>REVEALED</code> cell does nothing (per FR-1, FR-2).</p></div></div>
+<div class="req"><span class="rid">FR-10</span><div class="body">
+  <p>Revealing resolves in exactly one of three ways:</p>
+  <ul class="plain">
+    <li><strong>(a) The cell has a mine.</strong> The game is lost immediately. Go to §5.2.</li>
+    <li><strong>(b) The cell has <code>adjacentMines ≥ 1</code>.</strong> Reveal only that cell and display its number. Stop.</li>
+    <li><strong>(c) The cell has <code>adjacentMines == 0</code>.</strong> Reveal it, then recursively reveal all of its neighbours.</li>
+  </ul>
+</div></div>
+
+<div class="req key"><span class="rid">FR-11</span><div class="body">
+  <p><span class="tag">Commonly omitted</span> <strong>Cascade / flood fill.</strong> When a cell with <code>adjacentMines == 0</code> is revealed, every neighbouring cell is also revealed, and this repeats outward from any newly revealed cell that is itself zero. The expansion <strong>stops at numbered cells</strong>: a cell with <code>adjacentMines ≥ 1</code> is revealed as part of the cascade but does not propagate further.</p>
+</div></div>
+
+<figure>
+<pre>reveal(cell):
+    if cell.state != COVERED: return        # skips flags and already-revealed
+    cell.state = REVEALED
+    if cell.adjacentMines == 0:
+        for n in neighbours(cell):
+            reveal(n)</pre>
+<figcaption>Breadth- or depth-first are both acceptable.</figcaption>
+</figure>
+
+<p>Notes that make this correct rather than merely plausible:</p>
+<ul class="plain">
+  <li>The <code>state != COVERED</code> guard is what terminates the recursion. Without it the algorithm loops forever between adjacent zero-cells.</li>
+  <li>A cascade <strong>must not</strong> reveal flagged cells (FR-2). It flows around them.</li>
+  <li>A cascade can never reveal a mine, because a mine-containing cell always has a numbered neighbour standing between it and any zero-cell. This is a property of the rules, not something to enforce with an extra check.</li>
+  <li>On the largest supported board a single cascade may reveal several hundred cells. Use an explicit stack or queue if recursion depth is a concern (NFR-3).</li>
+</ul>
+
+<figure>
+<pre>before                        after
+
+<span class="zero">▓ ▓ ▓ ▓ ▓ ▓</span>                   <span class="zero">▓</span> <span class="zero">▓ ▓ ▓ ▓ ▓</span>
+<span class="zero">▓ ▓ ▓ ▓ ▓ ▓</span>                   <span class="zero">▓</span> <span class="one">1 1 1 1 1</span>
+<span class="zero">▓ ▓ ▓ ▓ ▓ ▓</span>                   <span class="zero">▓</span> <span class="one">1</span> · · · ·
+<span class="zero">▓ ▓ ▓ ▓ ▓ ▓</span>        ────►      <span class="zero">▓</span> <span class="one">1</span> · · · ·
+<span class="zero">▓ ▓ ▓ ▓ ▓ ▓</span>                   <span class="zero">▓</span> <span class="one">1</span> · · · ·
+<span class="zero">▓ ▓ ▓ ▓ ▓ ▓</span>                   <span class="zero">▓</span> <span class="one">1 1 1 1 1</span>
+
+▓ covered    · revealed, zero adjacent    <span class="one">1</span> revealed, one adjacent mine</pre>
+<figcaption>The player clicks one zero-cell and twenty-nine cells open. The ring of <span class="one">1</span>s is where expansion halted. Without this, the player must click every safe cell by hand and the game is unplayable. A build that reveals only the clicked cell is not a slower version of this game; it is a different and worse one.</figcaption>
+</figure>
+
+<h3><span class="num">4.2</span>First-click safety</h3>
+<div class="req key"><span class="rid">FR-12</span><div class="body">
+  <p><span class="tag">Commonly omitted</span> The player’s <strong>first reveal of a game must never hit a mine</strong>, and should open a cascade. Because mines are placed at random, this cannot be left to chance. Implement by <strong>deferring mine placement until after the first click</strong>:</p>
+  <ul class="plain">
+    <li>On new game, create the grid with no mines. Do not start the timer.</li>
+    <li>On the first reveal at <code>(r, c)</code>, place all <code>mineCount</code> mines uniformly at random among cells <strong>excluding <code>(r, c)</code> and its eight neighbours</strong>.</li>
+    <li>Compute <code>adjacentMines</code> for the whole board (FR-8).</li>
+    <li>Now perform the reveal normally (FR-10). Because the clicked cell and its whole neighbourhood are mine-free, it is guaranteed to be a zero-cell, so the player always begins with a useful cascade rather than a bare <span class="three">3</span>.</li>
+  </ul>
+  <p>The weaker variant — excluding only the clicked cell — is acceptable if the 3×3 exclusion would violate FR-5, but the 3×3 form is the requirement. Do <strong>not</strong> implement this by placing mines up front and re-rolling the board on a bad first click; re-rolling biases the distribution and is observably unfair over many games.</p>
+  <p><em>Rationale:</em> a loss on move one is unavoidable by any amount of skill. It teaches the player that the game is arbitrary, which is the opposite of the product’s premise (§1.1). This rule is the single largest driver of SC-2.</p>
+</div></div>
+
+<h3><span class="num">4.3</span>Flagging</h3>
+<div class="req"><span class="rid">FR-13</span><div class="body"><p>Right-clicking cycles a cell <code>COVERED → FLAGGED → COVERED</code>. Right-clicking a <code>REVEALED</code> cell does nothing.</p></div></div>
+<div class="req key"><span class="rid">FR-14</span><div class="body"><p><span class="tag">Commonly omitted</span> Flags are <strong>advisory</strong>. Placing a flag on a cell with no mine is legal, produces no warning, and no feedback. The game must never confirm or deny a flag’s correctness during play — doing so hands the player the answer and destroys the puzzle.</p></div></div>
+<div class="req"><span class="rid">FR-15</span><div class="body"><p>The player may place more flags than there are mines. The mine counter (UX-3) simply goes negative.</p></div></div>
+<div class="req"><span class="rid">FR-16</span><div class="body"><p>Right-click must not open the browser or OS context menu over the board.</p></div></div>
+
+<h3><span class="num">4.4</span>Chording</h3>
+<div class="req key"><span class="rid">FR-17</span><div class="body">
+  <p><span class="tag">Commonly omitted</span> Clicking a <code>REVEALED</code> numbered cell whose number <strong>equals the count of flags among its neighbours</strong> reveals all of its remaining covered, unflagged neighbours at once — each resolving normally per FR-10, cascades included.</p>
+  <ul class="plain">
+    <li>If the flag count does not equal the number, nothing happens.</li>
+    <li>If any of those flags is wrong, this reveals a mine and <strong>loses the game</strong>. That is correct and intended: chording is a speed tool that trusts the player’s own flags, and the risk is what makes it a real decision.</li>
+    <li>Chording is a convenience over repeated single clicks; it never reveals anything the player could not have revealed one click at a time.</li>
+  </ul>
+</div></div>
+
+<figure>
+<pre>before          after
+
+⚑ <span class="zero">▓ ▓</span>           ⚑ <span class="one">1</span> ·
+<span class="zero">▓</span> <span class="two">2</span> <span class="zero">▓</span>    ───►   <span class="zero">▓</span> <span class="two">2</span> ·
+⚑ <span class="zero">▓ ▓</span>           ⚑ <span class="one">1</span> ·</pre>
+<figcaption>The <span class="two">2</span> has exactly two flagged neighbours, so clicking it opens the three remaining covered ones.</figcaption>
+</figure>
+
+<!-- ============ 5 ============ -->
+<h2 id="s5"><span class="num">05</span>Game state</h2>
+
+<div class="req"><span class="rid">FR-18</span><div class="body"><p>A game is in exactly one of four states:</p></div></div>
+<div class="tw"><table>
+<thead><tr><th>State</th><th>Entered when</th><th>Board interactive</th></tr></thead>
+<tbody>
+<tr><td><code>READY</code></td><td>New game created; no cell revealed yet</td><td>Yes</td></tr>
+<tr><td><code>PLAYING</code></td><td>First cell revealed (mines now placed, timer running)</td><td>Yes</td></tr>
+<tr><td><code>WON</code></td><td>Win condition met (FR-19)</td><td>No</td></tr>
+<tr><td><code>LOST</code></td><td>A mine was revealed</td><td>No</td></tr>
+</tbody>
+</table></div>
+
+<div class="req key"><span class="rid">FR-19</span><div class="body">
+  <p><span class="tag">Commonly omitted</span> <strong>Win condition.</strong> The game is won when <strong>every cell without a mine is <code>REVEALED</code></strong> — equivalently, <code>revealedCount == (width × height) − mineCount</code>.</p>
+  <p>The win condition is <strong>not</strong> “every mine is flagged.” Flags are advisory (FR-14) and play no part in it. A player may win having placed no flags at all, and must be able to. Checking flags instead is the most common way this rule is implemented wrongly, and it produces a game that cannot be won by a fast player and can be “won” by a lucky one.</p>
+</div></div>
+
+<div class="req"><span class="rid">FR-20</span><div class="body"><p>Evaluate the win condition after every reveal action, including after a cascade completes and after a chord completes — not only after single clicks.</p></div></div>
+
+<h3><span class="num">5.1</span>On winning</h3>
+<div class="req"><span class="rid">FR-21</span><div class="body"><p>Stop the timer. Freeze the board. Auto-flag every remaining covered cell (all of which contain mines) as a cosmetic confirmation — display only, and it must happen <em>after</em> the win is determined, never as part of determining it. Show a win indicator (UX-5).</p></div></div>
+
+<h3><span class="num">5.2</span>On losing</h3>
+<div class="req key"><span class="rid">FR-22</span><div class="body">
+  <p>Stop the timer. Freeze the board. Then reveal the full truth so the player can see what happened:</p>
+  <ul class="plain">
+    <li>The mine that was clicked is shown distinctly from the others (e.g. a red ground). The player needs to know <em>which</em> cell killed them.</li>
+    <li>All other mines are revealed as mines.</li>
+    <li><span class="tag">Commonly omitted</span> Every flag placed on a cell that does <strong>not</strong> contain a mine is marked as incorrect — conventionally a mine glyph struck through with an ✗. This is the game’s post-mortem: it shows the player exactly where their reasoning went wrong, which is the only teaching moment the product has.</li>
+    <li>Correct flags stay as flags.</li>
+  </ul>
+</div></div>
+
+<!-- ============ 6 ============ -->
+<h2 id="s6"><span class="num">06</span>Interface</h2>
+
+<h3><span class="num">6.1</span>Layout</h3>
+<figure>
+<pre>┌────────────────────────────────────┐
+│  ┌─────┐      ┌───┐      ┌─────┐   │
+│  │ 010 │      │ ☺ │      │ 000 │   │  ← status bar
+│  └─────┘      └───┘      └─────┘   │
+│   mines      new game     timer    │
+├────────────────────────────────────┤
+│  ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓                 │
+│  ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓                 │  ← board
+│  ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓                 │
+│  ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓ ▓                 │
+└────────────────────────────────────┘</pre>
+</figure>
+
+<div class="req"><span class="rid">UX-1</span><div class="body"><p>The board is a grid of uniformly sized square cells. Covered and revealed states must be visually distinct — conventionally, covered cells are raised and revealed cells are flat or inset. The distinction must be legible at a glance across the whole board, since the player is constantly scanning for the covered/revealed boundary.</p></div></div>
+<div class="req"><span class="rid">UX-2</span><div class="body"><p>Minimum cell hit target: 24×24 px. The game punishes misclicks with instant loss, so the target must be forgiving.</p></div></div>
+
+<h3><span class="num">6.2</span>Status bar</h3>
+<div class="req"><span class="rid">UX-3</span><div class="body"><p><strong>Mine counter</strong> — displays <code>mineCount − flagsPlaced</code>. It counts <em>flags</em>, not discovered mines; the game does not know what the player has discovered. It may go negative (FR-15). It does not tell the player whether their flags are right.</p></div></div>
+<div class="req"><span class="rid">UX-4</span><div class="body"><p><strong>Timer</strong> — elapsed whole seconds. Starts on the <strong>first reveal</strong>, not on page load and not on new-game (FR-18). Stops on win or loss. Conventionally capped at 999 and zero-padded to three digits.</p></div></div>
+<div class="req"><span class="rid">UX-5</span><div class="body"><p><strong>New game control</strong> — a single always-available control that abandons the current game and starts a fresh one with the same settings. Conventionally a face that doubles as a state indicator: neutral while playing, sunglasses on win, dead on loss. The state indicator is decorative; the reset function is not.</p></div></div>
+
+<h3><span class="num">6.3</span>Displaying a cell</h3>
+<div class="req"><span class="rid">UX-6</span><div class="body"><p>Rendering rules, in priority order:</p></div></div>
+<div class="tw"><table>
+<thead><tr><th>Condition</th><th>Display</th></tr></thead>
+<tbody>
+<tr><td><code>COVERED</code></td><td>Blank covered tile</td></tr>
+<tr><td><code>FLAGGED</code></td><td>Covered tile with flag glyph</td></tr>
+<tr><td><code>REVEALED</code>, <code>adjacentMines == 0</code></td><td>Empty revealed tile — <strong>no “0”</strong></td></tr>
+<tr><td><code>REVEALED</code>, <code>adjacentMines ≥ 1</code></td><td>The digit, in its assigned colour</td></tr>
+<tr><td><code>REVEALED</code> mine (game over only)</td><td>Mine glyph</td></tr>
+</tbody>
+</table></div>
+
+<div class="req key"><span class="rid">UX-7</span><div class="body"><p><span class="tag">Commonly omitted</span> A revealed cell with zero adjacent mines shows <strong>nothing</strong>, not the character <code>0</code>. Zero-cells are the visual negative space that lets the player read the board’s shape; filling them with digits makes a solved region unreadable.</p></div></div>
+
+<div class="req"><span class="rid">UX-8</span><div class="body">
+  <p><strong>Number colours.</strong> The digits 1–8 are colour-coded, and the palette is load-bearing: players scan for “the blue ones” faster than they read digits. Use the conventional assignment.</p>
+</div></div>
+
+<div class="tw"><table class="nums">
+<thead><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead>
+<tbody><tr>
+<td style="color:var(--n1)">1</td><td style="color:var(--n2)">2</td>
+<td style="color:var(--n3)">3</td><td style="color:var(--n4)">4</td>
+<td style="color:var(--n5)">5</td><td style="color:var(--n6)">6</td>
+<td style="color:var(--n7)">7</td><td style="color:var(--n8)">8</td>
+</tr></tbody>
+</table></div>
+<p>Blue, green, red, dark blue, dark red, teal, black, grey. Colour is an accelerator, never the sole carrier of meaning — the digit itself is always present, so the display stays fully usable without colour vision (NFR-5).</p>
+
+<h3><span class="num">6.4</span>Instructions</h3>
+<div class="req"><span class="rid">UX-9</span><div class="body"><p>The rules must be reachable from the game without leaving it. First-time players cannot infer the flood fill, chording, or the win condition from the board alone. Minimum content: the goal, the three inputs, what the numbers mean, and the fact that the first click is always safe.</p></div></div>
+
+<!-- ============ 7 ============ -->
+<h2 id="s7"><span class="num">07</span>Non-functional requirements</h2>
+<div class="req"><span class="rid">NFR-1</span><div class="body"><p>Any single action resolves within 16 ms on the Expert board, including a worst-case cascade.</p></div></div>
+<div class="req"><span class="rid">NFR-2</span><div class="body"><p>Custom boards up to 50×50 are supported without degradation.</p></div></div>
+<div class="req"><span class="rid">NFR-3</span><div class="body"><p>Cascade implementation must not overflow the stack on a board where a single cascade reveals every safe cell (e.g. 50×50 with 1 mine). Prefer an explicit queue.</p></div></div>
+<div class="req"><span class="rid">NFR-4</span><div class="body"><p>Full keyboard operation: arrow keys move a focus cursor, one key reveals, one key flags. The focused cell is visibly indicated.</p></div></div>
+<div class="req"><span class="rid">NFR-5</span><div class="body"><p>The board is navigable and solvable without colour vision (UX-8) and exposes cell state to assistive technology — position, covered/flagged/revealed, adjacent count.</p></div></div>
+<div class="req"><span class="rid">NFR-6</span><div class="body"><p>State is held in memory; no persistence is required in v1. A page refresh legitimately starts a new game.</p></div></div>
+<div class="req"><span class="rid">NFR-7</span><div class="body"><p>The hidden board must not be discoverable through the rendered document — do not emit mine positions into the DOM, markup attributes, or class names for covered cells.</p></div></div>
+
+<!-- ============ 8 ============ -->
+<h2 id="s8"><span class="num">08</span>Non-goals</h2>
+<p>Stated explicitly so they are not implemented by reflex.</p>
+<ul class="plain">
+  <li><strong>No difficulty scaling within a round.</strong> Mine count is fixed at generation.</li>
+  <li><strong>No hints, no undo, no lives.</strong> A loss is final; the response is to start another round, which takes one click.</li>
+  <li><strong>No guaranteed-solvable board generation in v1.</strong> Some boards contain positions where no deduction determines the answer and the player must guess (§9).</li>
+  <li><strong>No timing pressure.</strong> The timer measures; it never constrains.</li>
+  <li><strong>No touch-first design in v1.</strong> Right-click and chord have no clean touch equivalents; solving that properly is its own scope.</li>
+</ul>
+
+<!-- ============ 9 ============ -->
+<h2 id="s9"><span class="num">09</span>Open questions</h2>
+<div class="req"><span class="rid">OQ-1</span><div class="body"><p><strong>Guess-free boards.</strong> Roughly 20–30% of Expert boards reach a position where two configurations are equally consistent with all visible information, forcing a coin flip near the end. Solvable-board generation exists — generate, solve with a constraint solver, regenerate on failure — but costs generation time and changes the board distribution. <em>Recommendation: ship without it, instrument how often players lose on a final guess, revisit.</em></p></div></div>
+<div class="req"><span class="rid">OQ-2</span><div class="body"><p><strong>Question-mark state.</strong> Some implementations add a third covered state for “unsure”, cycling <code>COVERED → FLAGGED → QUESTION → COVERED</code>. It is rarely used and it slows flag placement for experienced players, who then go looking for a setting to disable it. <em>Recommendation: omit.</em></p></div></div>
+<div class="req"><span class="rid">OQ-3</span><div class="body"><p><strong>Timer cap.</strong> 999 seconds is the convention, inherited from a three-digit display. Whether to keep the cap or count freely is a cosmetic decision.</p></div></div>
+
+<!-- ============ 10 ============ -->
+<h2 id="s10"><span class="num">10</span>Acceptance criteria</h2>
+<p>Each maps to the requirement it verifies. A build is complete when all pass.</p>
+<div class="tw"><table class="ac">
+<thead><tr><th>#</th><th>Test</th><th>Verifies</th></tr></thead>
+<tbody>
+<tr><td>AC-1</td><td>Generate 1,000 Beginner boards; each has exactly 10 mines, and mine frequency per cell is uniform within sampling error</td><td>FR-4</td></tr>
+<tr><td>AC-2</td><td>Clicking the centre of a 3×3 mine-free region reveals the centre and all 8 neighbours</td><td>FR-11</td></tr>
+<tr><td>AC-3</td><td>On a 10×10 board with 1 mine in a corner, a first click far from it reveals every safe cell in one action and wins</td><td>FR-11, FR-19</td></tr>
+<tr><td>AC-4</td><td>A cascade reaching a flagged cell leaves it flagged and covered, and expands around it</td><td>FR-2, FR-11</td></tr>
+<tr><td>AC-5</td><td>Across 500 new games, the first click never reveals a mine and always produces a cascade</td><td>FR-12</td></tr>
+<tr><td>AC-6</td><td>Left-clicking a flagged cell does nothing, even when it has no mine</td><td>FR-2</td></tr>
+<tr><td>AC-7</td><td>Revealing every safe cell with zero flags placed produces a win</td><td>FR-19</td></tr>
+<tr><td>AC-8</td><td>Flagging every mine but leaving one safe cell covered does <em>not</em> produce a win</td><td>FR-19</td></tr>
+<tr><td>AC-9</td><td>Chording a <code>2</code> with two adjacent flags reveals its other neighbours; with one adjacent flag, nothing happens</td><td>FR-17</td></tr>
+<tr><td>AC-10</td><td>Chording where a flag is misplaced reveals a mine and loses</td><td>FR-17</td></tr>
+<tr><td>AC-11</td><td>On loss, the clicked mine is distinct, all other mines shown, all incorrect flags marked ✗</td><td>FR-22</td></tr>
+<tr><td>AC-12</td><td>Timer reads 0 until the first reveal, increments once per second thereafter, freezes on win and on loss</td><td>UX-4</td></tr>
+<tr><td>AC-13</td><td>Mine counter reads <code>mineCount</code> at start, decrements per flag, increments per unflag, goes negative past <code>mineCount</code> flags</td><td>UX-3, FR-15</td></tr>
+<tr><td>AC-14</td><td>Revealed zero-cells render empty; no <code>0</code> appears anywhere on the board</td><td>UX-7</td></tr>
+<tr><td>AC-15</td><td>Custom input of 5×5 with 20 mines is rejected with a message; the game does not start</td><td>FR-5, FR-7</td></tr>
+<tr><td>AC-16</td><td>A 50×50 board with 1 mine cascades fully without stack overflow, in under 16 ms</td><td>NFR-1, NFR-3</td></tr>
+<tr><td>AC-17</td><td>Right-clicking the board never opens a context menu</td><td>FR-16</td></tr>
+<tr><td>AC-18</td><td>Mine positions are absent from the rendered document for covered cells</td><td>NFR-7</td></tr>
+</tbody>
+</table></div>
+
+<!-- ============ A ============ -->
+<h2 id="sa"><span class="num">A</span>Reusing this as a template</h2>
+<p>The structure that makes this document buildable-from-zero, generalised to any domain.</p>
+
+<ol class="principles">
+<li><b>State the intent before the mechanics.</b> §1.1 says the game is about deduction, not reflex. Every later decision — first-click safety, no timing pressure, advisory flags — follows from that one sentence. An implementer who understands the intent resolves ambiguity the way you would. One who only has a rule list guesses.</li>
+<li><b>Define the vocabulary once, precisely, then use it exactly.</b> §2 pins down “neighbour” as eight-way, with a diagram. Every subsequent “adjacent” is now unambiguous. Most specification defects are vocabulary defects wearing a disguise.</li>
+<li><b>Mark the assumed knowledge.</b> The <span class="tag">Commonly omitted</span> marks flag the rules a domain expert would never think to write down — flood fill, first-click safety, the real win condition, flags blocking reveals, no zeroes displayed, the loss post-mortem. <strong>These are the whole reason the document works.</strong> For your own domain the test is: <em>what would I be annoyed to have to explain in review?</em> Write that down first; it is exactly what will be got wrong.</li>
+<li><b>Give worked examples with concrete data.</b> The cascade diagram in §4.1 conveys in twelve lines of monospace what three paragraphs of prose leaves ambiguous. If a rule has a shape, draw the shape.</li>
+<li><b>Say why, not just what.</b> FR-12’s rationale — a loss on move one is unavoidable by any skill — lets an implementer who hits an edge case the spec missed reason from the same principle. Rules without reasons get followed literally into absurdity.</li>
+<li><b>Name the wrong implementations explicitly.</b> “The win condition is <em>not</em> every mine flagged.” “Do not re-roll the board.” Naming the attractive-but-wrong path is worth more than another paragraph describing the right one, because the wrong path is where the reader was already heading.</li>
+<li><b>Write the non-goals down.</b> §8 prevents the plausible additions — hints, lives, difficulty ramping — that would each individually seem like an improvement and collectively be a different product.</li>
+<li><b>Separate open questions from requirements.</b> §9 marks the genuinely undecided, each with a recommendation attached. Anything not in §9 is decided, which is what lets an implementer proceed without asking.</li>
+<li><b>Make every requirement testable, then write the tests as part of the spec.</b> §10 is the document’s own definition of done. If a requirement cannot become a row of that table, it is a preference, not a requirement — either sharpen it or move it to non-goals.</li>
+</ol>
+
+<p class="foot">MINESWEEPER PRD · V1.0 · 22 FUNCTIONAL REQUIREMENTS · 18 ACCEPTANCE CRITERIA</p>
+
+</div>
+</body>
+</html>
