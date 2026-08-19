@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minesweeper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EEF0F3; --surface:#FFFFFF; --panel:#E3E6EB;
+  --tile:#C6CDD7; --tile-hi:#EDF0F4; --tile-lo:#A2ABB8;
+  --open:#F4F6F8; --open-line:#DDE1E7;
+  --ink:#14171C; --ink-2:#565C67; --ink-3:#7C838F;
+  --rule:#D3D7DE; --rule-2:#BFC5CE;
+  --accent:#1A46C8; --danger:#C22A21; --danger-bg:#F7D2CE;
+  --n1:#1A46C8; --n2:#1E7A38; --n3:#C22A21; --n4:#122B70;
+  --n5:#7A1F16; --n6:#137A78; --n7:#14171C; --n8:#6B727E;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#0F1216; --surface:#171B21; --panel:#1F242C;
+    --tile:#3D4653; --tile-hi:#525E6E; --tile-lo:#252C36;
+    --open:#13171C; --open-line:#222831;
+    --ink:#E6E9EE; --ink-2:#A0A8B4; --ink-3:#7B8390;
+    --rule:#2A3038; --rule-2:#3A424D;
+    --accent:#7FA0FF; --danger:#FF7A6B; --danger-bg:#5A211B;
+    --n1:#7FA0FF; --n2:#5FC97E; --n3:#FF7A6B; --n4:#9FB4FF;
+    --n5:#E39B8F; --n6:#4FD1CE; --n7:#E6E9EE; --n8:#9AA2AE;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  display:flex; flex-direction:column; align-items:center;
+  padding:28px 16px 56px; gap:18px;
+}
+header{text-align:center}
+h1{
+  font-size:1.32rem; font-weight:600; letter-spacing:-.01em; margin:0 0 4px;
+}
+header p{
+  margin:0; font-size:.8rem; color:var(--ink-3);
+}
+header a{color:var(--accent)}
+
+/* ---- controls ---- */
+.presets{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
+button{font:inherit; color:inherit; cursor:pointer}
+.preset{
+  background:var(--surface); border:1px solid var(--rule-2); color:var(--ink-2);
+  padding:6px 13px; font-size:.8rem; border-radius:3px;
+}
+.preset:hover{border-color:var(--accent); color:var(--accent)}
+.preset[aria-pressed="true"]{
+  background:var(--accent); border-color:var(--accent); color:#fff;
+}
+@media (prefers-color-scheme:dark){.preset[aria-pressed="true"]{color:#0F1216}}
+
+.custom{
+  display:none; gap:8px; align-items:flex-end; flex-wrap:wrap; justify-content:center;
+  background:var(--surface); border:1px solid var(--rule); padding:12px 14px; border-radius:4px;
+}
+.custom.open{display:flex}
+.custom label{display:flex; flex-direction:column; gap:3px; font-size:.68rem;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+.custom input{
+  font:inherit; font-family:"IBM Plex Mono",monospace; font-size:.85rem; width:76px;
+  padding:5px 8px; background:var(--ground); color:var(--ink);
+  border:1px solid var(--rule-2); border-radius:3px;
+}
+.custom button{
+  background:var(--accent); border:1px solid var(--accent); color:#fff;
+  padding:6px 14px; font-size:.8rem; border-radius:3px;
+}
+.err{
+  flex-basis:100%; margin:0; font-size:.78rem; color:var(--danger);
+  font-family:"IBM Plex Mono",monospace;
+}
+.err:empty{display:none}
+
+/* ---- status bar ---- */
+.frame{
+  background:var(--panel); border:1px solid var(--rule-2);
+  padding:10px; border-radius:5px; max-width:100%; overflow-x:auto;
+}
+.status{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  margin-bottom:10px; padding:0 2px;
+}
+.readout{
+  font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:1.32rem;
+  font-variant-numeric:tabular-nums; letter-spacing:.06em;
+  background:#1A1F26; color:#FF5A4A; padding:4px 10px; border-radius:3px;
+  min-width:4.6ch; text-align:center; border:1px solid #000;
+}
+#face{
+  font-size:1.42rem; line-height:1; background:var(--tile);
+  border:2px solid; border-color:var(--tile-hi) var(--tile-lo) var(--tile-lo) var(--tile-hi);
+  border-radius:4px; width:44px; height:40px; display:grid; place-items:center; padding:0;
+}
+#face:active{border-color:var(--tile-lo) var(--tile-hi) var(--tile-hi) var(--tile-lo)}
+
+/* ---- board ---- */
+#board{
+  display:grid; gap:1px; background:var(--rule-2);
+  border:1px solid var(--rule-2); width:max-content;
+}
+.cell{
+  width:28px; height:28px; padding:0; border:0; border-radius:0;
+  font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:15px;
+  line-height:1; display:grid; place-items:center;
+  background:var(--tile); box-shadow:inset 1.5px 1.5px 0 var(--tile-hi), inset -1.5px -1.5px 0 var(--tile-lo);
+  user-select:none; -webkit-user-select:none;
+}
+.cell:hover:not(.open){background:var(--tile-hi)}
+.cell.open{
+  background:var(--open); box-shadow:inset 0 0 0 1px var(--open-line);
+  cursor:default;
+}
+.cell.boom{background:var(--danger-bg)}
+.cell:focus-visible{outline:2px solid var(--accent); outline-offset:-2px; z-index:2}
+.cell.wrong{position:relative; color:var(--danger)}
+.cell.wrong::after{
+  content:"✕"; position:absolute; inset:0; display:grid; place-items:center;
+  color:var(--danger); font-size:20px; font-weight:700;
+}
+.n1{color:var(--n1)} .n2{color:var(--n2)} .n3{color:var(--n3)} .n4{color:var(--n4)}
+.n5{color:var(--n5)} .n6{color:var(--n6)} .n7{color:var(--n7)} .n8{color:var(--n8)}
+
+/* ---- help ---- */
+details{
+  max-width:56ch; background:var(--surface); border:1px solid var(--rule);
+  border-radius:4px; padding:0 16px; font-size:.85rem;
+}
+summary{
+  cursor:pointer; padding:11px 0; font-weight:600; font-size:.85rem; list-style:none;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ "; color:var(--ink-3)}
+details[open] summary::before{content:"▾ "}
+details[open] summary{border-bottom:1px solid var(--rule)}
+details div{padding:12px 0 4px; color:var(--ink-2); line-height:1.6}
+details p{margin:0 0 .8em} details p:last-child{margin:0}
+kbd{
+  font-family:"IBM Plex Mono",monospace; font-size:.85em; background:var(--panel);
+  border:1px solid var(--rule-2); border-bottom-width:2px; border-radius:3px; padding:1px 5px;
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Minesweeper</h1>
+  <p>Built to <a href="index.html">the spec</a> — every FR, UX and NFR in it.</p>
+</header>
+
+<div class="presets" role="group" aria-label="Difficulty">
+  <button class="preset" data-w="9"  data-h="9"  data-m="10">Beginner</button>
+  <button class="preset" data-w="16" data-h="16" data-m="40">Intermediate</button>
+  <button class="preset" data-w="30" data-h="16" data-m="99">Expert</button>
+  <button class="preset" id="customBtn" aria-expanded="false">Custom…</button>
+</div>
+
+<form class="custom" id="customForm">
+  <label>Width  <input type="number" id="cw" value="20" min="2" max="50"></label>
+  <label>Height <input type="number" id="ch" value="20" min="2" max="50"></label>
+  <label>Mines  <input type="number" id="cm" value="60" min="1"></label>
+  <button type="submit">Start</button>
+  <p class="err" id="customErr" role="alert"></p>
+</form>
+
+<div class="frame">
+  <div class="status">
+    <output class="readout" id="mineCount" aria-label="Mines remaining">010</output>
+    <button id="face" aria-label="New game">🙂</button>
+    <output class="readout" id="timer" aria-label="Seconds elapsed">000</output>
+  </div>
+  <div id="board" role="grid" aria-label="Minefield"></div>
+</div>
+
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+
+<details>
+  <summary>How to play</summary>
+  <div>
+    <p><strong>Goal:</strong> uncover every square that isn't a mine. You never have to uncover the mines themselves — flagging them is optional.</p>
+    <p><strong>Numbers</strong> tell you how many mines touch that square, counting all eight neighbours including diagonals. A blank square touches none, so its neighbours open automatically — one click can clear a whole region.</p>
+    <p><strong>Left click</strong> uncovers. <strong>Right click</strong> flags a square you think is a mine; flagged squares can't be uncovered by accident. <strong>Middle click</strong> (or both buttons) on a number whose flags already add up uncovers its remaining neighbours — fast, but it trusts your flags.</p>
+    <p><strong>Keyboard:</strong> <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> to move, <kbd>Enter</kbd> to uncover, <kbd>F</kbd> to flag, <kbd>C</kbd> to chord.</p>
+    <p><strong>Your first click is always safe</strong> — the mines are laid out after it, never underneath it.</p>
+  </div>
+</details>
+
+<script>
+"use strict";
+/* Implements PRD.md. Requirement tags refer to that document. */
+
+const COVERED = 0, REVEALED = 1, FLAGGED = 2;
+const READY = "ready", PLAYING = "playing", WON = "won", LOST = "lost";
+const MAX_DIM = 50;                                     // NFR-2
+
+const boardEl = document.getElementById("board");
+const mineCountEl = document.getElementById("mineCount");
+const timerEl = document.getElementById("timer");
+const faceEl = document.getElementById("face");
+const liveEl = document.getElementById("live");
+
+let W, H, M;                 // FR-3
+let mine, count, state, els; // parallel flat arrays
+let phase, revealed, flags, minesPlaced;
+let cursor, timerId, seconds;
+
+const idx = (r, c) => r * W + c;
+
+function neighbours(r, c) {                             // eight-way, §2
+  const out = [];
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      if (!dr && !dc) continue;
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < H && nc >= 0 && nc < W) out.push([nr, nc]);
+    }
+  return out;
+}
+
+/* ---------- lifecycle ---------- */
+
+function newGame(w, h, m) {
+  W = w; H = h; M = m;
+  const n = W * H;
+  mine = new Uint8Array(n);
+  count = new Uint8Array(n);
+  state = new Uint8Array(n);
+  phase = READY; revealed = 0; flags = 0; minesPlaced = false;
+  cursor = 0;
+  stopTimer(); seconds = 0;
+  buildBoard();
+  updateStatus();
+  faceEl.textContent = "🙂";
+  say(`New game. ${W} by ${H}, ${M} mines.`);
+}
+
+function buildBoard() {
+  boardEl.style.gridTemplateColumns = `repeat(${W}, 28px)`;
+  boardEl.setAttribute("aria-rowcount", H);
+  boardEl.setAttribute("aria-colcount", W);
+  const frag = document.createDocumentFragment();
+  els = new Array(W * H);
+  for (let r = 0; r < H; r++)
+    for (let c = 0; c < W; c++) {
+      const b = document.createElement("button");
+      b.className = "cell";
+      b.type = "button";
+      b.setAttribute("role", "gridcell");
+      b.dataset.r = r; b.dataset.c = c;      // position only — never mine data (NFR-7)
+      b.tabIndex = -1;
+      els[idx(r, c)] = b;
+      frag.appendChild(b);
+    }
+  boardEl.replaceChildren(frag);
+  els[0].tabIndex = 0;
+  paintAll();
+}
+
+/* FR-12: mines are laid only after the first click, avoiding it and its neighbours. */
+function placeMines(safeR, safeC) {
+  const banned = new Set([idx(safeR, safeC)]);
+  for (const [r, c] of neighbours(safeR, safeC)) banned.add(idx(r, c));
+
+  const pool = [];
+  for (let i = 0; i < W * H; i++) if (!banned.has(i)) pool.push(i);
+
+  // Partial Fisher-Yates: uniform selection without replacement (FR-4)
+  for (let k = 0; k < M; k++) {
+    const j = k + Math.floor(Math.random() * (pool.length - k));
+    [pool[k], pool[j]] = [pool[j], pool[k]];
+    mine[pool[k]] = 1;
+  }
+
+  for (let r = 0; r < H; r++)                            // FR-8
+    for (let c = 0; c < W; c++) {
+      let n = 0;
+      for (const [nr, nc] of neighbours(r, c)) n += mine[idx(nr, nc)];
+      count[idx(r, c)] = n;
+    }
+  minesPlaced = true;
+}
+
+/* ---------- actions ---------- */
+
+function reveal(r, c) {                                  // FR-9
+  if (phase === WON || phase === LOST) return;
+  const i = idx(r, c);
+  if (state[i] !== COVERED) return;                      // FR-1, FR-2
+
+  if (!minesPlaced) { placeMines(r, c); startPlaying(); }
+
+  if (mine[i]) return lose(i);                           // FR-10(a)
+
+  const opened = cascade(r, c);                          // FR-10(b,c), FR-11
+  opened.forEach(paint);
+  checkWin();                                            // FR-20
+  say(opened.length === 1
+    ? `Uncovered ${count[i] || "blank"}.`
+    : `Uncovered ${opened.length} squares.`);
+}
+
+/* FR-11 — explicit stack, no recursion (NFR-3) */
+function cascade(r, c) {
+  const stack = [idx(r, c)], opened = [];
+  while (stack.length) {
+    const i = stack.pop();
+    if (state[i] !== COVERED) continue;                  // terminates; skips flags
+    state[i] = REVEALED; revealed++; opened.push(i);
+    if (count[i] === 0)
+      for (const [nr, nc] of neighbours((i / W) | 0, i % W)) {
+        const j = idx(nr, nc);
+        if (state[j] === COVERED) stack.push(j);
+      }
+  }
+  return opened;
+}
+
+function toggleFlag(r, c) {                              // FR-13
+  if (phase === WON || phase === LOST) return;
+  const i = idx(r, c);
+  if (state[i] === REVEALED) return;
+  if (state[i] === FLAGGED) { state[i] = COVERED; flags--; }
+  else { state[i] = FLAGGED; flags++; }                  // FR-14: no correctness feedback
+  paint(i); updateStatus();                              // FR-15: may go negative
+  say(state[i] === FLAGGED ? "Flagged." : "Flag removed.");
+}
+
+function chord(r, c) {                                   // FR-17
+  if (phase !== PLAYING) return;
+  const i = idx(r, c);
+  if (state[i] !== REVEALED || count[i] === 0) return;
+
+  const nb = neighbours(r, c);
+  const flagged = nb.filter(([nr, nc]) => state[idx(nr, nc)] === FLAGGED).length;
+  if (flagged !== count[i]) return;
+
+  const targets = nb.filter(([nr, nc]) => state[idx(nr, nc)] === COVERED);
+  for (const [nr, nc] of targets)                        // a wrong flag loses — intended
+    if (mine[idx(nr, nc)]) return lose(idx(nr, nc));
+
+  let opened = [];
+  for (const [nr, nc] of targets) opened = opened.concat(cascade(nr, nc));
+  opened.forEach(paint);
+  checkWin();                                            // FR-20
+  if (opened.length) say(`Uncovered ${opened.length} squares.`);
+}
+
+/* ---------- endings ---------- */
+
+function checkWin() {                                    // FR-19 — safe cells, not flags
+  if (revealed !== W * H - M) return;
+  phase = WON; stopTimer(); faceEl.textContent = "😎";
+  const changed = [];
+  for (let i = 0; i < W * H; i++)                        // FR-21 — cosmetic, after the fact
+    if (state[i] === COVERED) { state[i] = FLAGGED; flags++; changed.push(i); }
+  changed.forEach(paint);                                // only what actually changed
+  updateStatus();
+  say(`Swept in ${seconds} seconds.`);
+}
+
+function lose(hitIndex) {                                // FR-22
+  phase = LOST; stopTimer(); faceEl.textContent = "💀";
+  state[hitIndex] = REVEALED; revealed++;
+  paintAll();
+  els[hitIndex].classList.add("boom");                   // which cell killed you
+  say("Mine. Game over.");
+}
+
+/* ---------- rendering ---------- */
+
+function paint(i) {
+  const el = els[i], st = state[i];
+  const over = phase === WON || phase === LOST;
+  let cls = "cell", txt = "", label = "Covered";
+
+  if (st === FLAGGED) {
+    txt = "🚩"; label = "Flagged";
+    // A flag on a safe square is only exposed as wrong once the game is lost (FR-22)
+    if (over && phase === LOST && !mine[i]) {
+      cls = "cell open wrong"; txt = "💣"; label = "Incorrect flag";  // FR-22: mine glyph struck through
+    }
+  } else if (st === REVEALED) {
+    cls = "cell open";
+    if (mine[i]) { txt = "💣"; label = "Mine"; }
+    else if (count[i] > 0) {
+      txt = String(count[i]);                            // UX-6
+      cls = "cell open n" + count[i];                    // UX-8 — colour aids, digit carries
+      label = count[i] + " adjacent";
+    } else {
+      label = "Empty";                                   // UX-7 — never the character "0"
+    }
+  } else if (over && mine[i]) {
+    cls = "cell open"; txt = "💣"; label = "Mine";
+  }
+  // Covered cells say nothing about what is underneath them (NFR-7).
+  // Write only on change: a full-board cascade touches thousands of cells (NFR-1).
+  if (el.className !== cls) el.className = cls;
+  if (el.textContent !== txt) el.textContent = txt;
+  if (el.getAttribute("aria-label") !== label) el.setAttribute("aria-label", label);
+}
+
+function paintAll() { for (let i = 0; i < W * H; i++) paint(i); }
+
+function updateStatus() {
+  const left = M - flags;                                // UX-3 — counts flags, not mines
+  mineCountEl.textContent = left < 0
+    ? "-" + String(Math.abs(left)).padStart(2, "0")
+    : String(left).padStart(3, "0");
+  timerEl.textContent = String(Math.min(seconds, 999)).padStart(3, "0"); // UX-4
+}
+
+/* ---------- timer (UX-4: starts on first reveal) ---------- */
+
+function startPlaying() {
+  phase = PLAYING;
+  timerId = setInterval(() => {
+    if (seconds < 999) { seconds++; updateStatus(); }
+  }, 1000);
+}
+function stopTimer() { clearInterval(timerId); timerId = null; }
+
+function say(msg) { liveEl.textContent = msg; }
+
+/* ---------- input ---------- */
+
+boardEl.addEventListener("contextmenu", e => e.preventDefault());   // FR-16
+
+/* A chord is two buttons at once, so it spans several events: the releases and the
+   trailing click must not also flag or reveal. `chordArmed` suppresses them, and is
+   cleared by the next fresh gesture rather than on a timer — so the behaviour does not
+   depend on how fast the events arrive. */
+let chordArmed = false;
+
+boardEl.addEventListener("mousedown", e => {
+  const cell = e.target.closest(".cell");
+  if (!cell) return;
+  if (e.buttons === 1 || e.buttons === 2 || e.buttons === 4) chordArmed = false;  // first button down
+  if (e.buttons === 3 || e.button === 1) {
+    chordArmed = true;
+    e.preventDefault();
+    chord(+cell.dataset.r, +cell.dataset.c);
+  }
+});
+
+boardEl.addEventListener("mouseup", e => {
+  const cell = e.target.closest(".cell");
+  if (cell && e.button === 2 && !chordArmed) toggleFlag(+cell.dataset.r, +cell.dataset.c);
+});
+
+boardEl.addEventListener("click", e => {
+  const cell = e.target.closest(".cell");
+  if (!cell || chordArmed) return;
+  focusCell(idx(+cell.dataset.r, +cell.dataset.c));
+  reveal(+cell.dataset.r, +cell.dataset.c);
+});
+
+boardEl.addEventListener("auxclick", e => e.preventDefault());
+
+/* NFR-4 — full keyboard operation */
+boardEl.addEventListener("keydown", e => {
+  const cell = e.target.closest(".cell");
+  if (!cell) return;
+  let r = +cell.dataset.r, c = +cell.dataset.c;
+  const move = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+  if (move) {
+    e.preventDefault();
+    focusCell(idx(Math.min(H - 1, Math.max(0, r + move[0])),
+                  Math.min(W - 1, Math.max(0, c + move[1]))));
+  } else if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault(); reveal(r, c);
+  } else if (e.key === "f" || e.key === "F") {
+    e.preventDefault(); toggleFlag(r, c);
+  } else if (e.key === "c" || e.key === "C") {
+    e.preventDefault(); chord(r, c);
+  }
+});
+
+function focusCell(i) {
+  els[cursor].tabIndex = -1;
+  cursor = i;
+  els[i].tabIndex = 0;
+  // preventScroll matters for NFR-1: a plain focus() forces a synchronous
+  // scroll-into-view layout of the whole grid, which on a 50x50 board costs
+  // more than the reveal itself.
+  els[i].focus({ preventScroll: true });
+}
+
+/* ---------- controls ---------- */
+
+const presets = [...document.querySelectorAll(".preset[data-w]")];
+let current = { w: 9, h: 9, m: 10 };
+
+function select(btn, cfg) {
+  presets.forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+  current = cfg;
+  newGame(cfg.w, cfg.h, cfg.m);
+}
+presets.forEach(b => b.addEventListener("click", () =>
+  select(b, { w: +b.dataset.w, h: +b.dataset.h, m: +b.dataset.m })));
+
+faceEl.addEventListener("click", () => newGame(current.w, current.h, current.m));  // UX-5
+
+const customBtn = document.getElementById("customBtn");
+const customForm = document.getElementById("customForm");
+const customErr = document.getElementById("customErr");
+customBtn.addEventListener("click", () => {
+  const open = customForm.classList.toggle("open");
+  customBtn.setAttribute("aria-expanded", String(open));
+});
+
+/* FR-5 / FR-7 — reject with the violated bound named; never silently clamp */
+customForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const w = +document.getElementById("cw").value;
+  const h = +document.getElementById("ch").value;
+  const m = +document.getElementById("cm").value;
+
+  if (!Number.isInteger(w) || w < 2 || w > MAX_DIM) return fail(`Width must be 2–${MAX_DIM}.`);
+  if (!Number.isInteger(h) || h < 2 || h > MAX_DIM) return fail(`Height must be 2–${MAX_DIM}.`);
+  const max = w * h - 9;
+  if (!Number.isInteger(m) || m < 1) return fail("Mines must be at least 1.");
+  if (m > max) return fail(`Too many mines: ${w}×${h} allows at most ${max} (9 squares are reserved to keep the first click safe).`);
+
+  customErr.textContent = "";
+  presets.forEach(b => b.setAttribute("aria-pressed", "false"));
+  current = { w, h, m };
+  newGame(w, h, m);
+});
+function fail(msg) { customErr.textContent = msg; }
+
+select(presets[0], current);
+</script>
+</body>
+</html>
